@@ -150,44 +150,39 @@ interface Settings {
 ### 高度な設定例
 
 ```typescript
-// vite.config.ts
-export default defineConfig({
-  plugins: [
-    pugPlugin({
-      buildOptions: {
-        basedir: './src',
-        pretty: false,  // 本番環境では圧縮
-        compileDebug: false,
-        cache: true,
-        inlineRuntimeFunctions: false
-      },
-      buildLocals: {
-        title: 'Production Site',
-        version: process.env.npm_package_version,
-        buildTime: new Date().toISOString(),
-        analytics: {
-          gtag: 'GA_MEASUREMENT_ID'
-        }
-      },
-      serveOptions: {
-        basedir: './src',
-        pretty: true,  // 開発時は読みやすく
-        compileDebug: true,
-        cache: false   // 開発時はキャッシュ無効
-      },
-      serveLocals: {
-        title: 'Development Site',
-        version: 'dev',
-        buildTime: 'dev-mode'
-      },
-      ignorePattern: [
-        '/_*/**',      // アンダースコアで始まるディレクトリを無視
-        '/admin/**',   // adminディレクトリを無視
-        '/**/*.draft.pug' // .draft.pugファイルを無視
-      ],
-      reload: true
-    })
-  ]
+// プラグインの詳細設定
+pugPlugin({
+  buildOptions: {
+    basedir: './src',
+    pretty: false,  // 本番環境では圧縮
+    compileDebug: false,
+    cache: true,
+    inlineRuntimeFunctions: false
+  },
+  buildLocals: {
+    title: 'Production Site',
+    version: process.env.npm_package_version,
+    buildTime: new Date().toISOString(),
+    author: 'Your Name',
+    description: 'A modern static site built with Vite and Pug'
+  },
+  serveOptions: {
+    basedir: './src',
+    pretty: true,  // 開発時は読みやすく
+    compileDebug: true,
+    cache: false   // 開発時はキャッシュ無効
+  },
+  serveLocals: {
+    title: 'Development Site',
+    version: 'dev',
+    buildTime: 'dev-mode'
+  },
+  ignorePattern: [
+    '/_*/**',      // アンダースコアで始まるディレクトリを無視
+    '/admin/**',   // adminディレクトリを無視
+    '/**/*.draft.pug' // .draft.pugファイルを無視
+  ],
+  reload: true
 })
 ```
 
@@ -242,22 +237,19 @@ interface ImportMeta {
 
 ## パフォーマンス最適化
 
-### Vite 7の新機能活用
+Vite 7の新機能と組み合わせて、プラグインの設定を最適化できます：
 
 ```typescript
-// vite.config.ts
-export default defineConfig({
-  build: {
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          vendor: ['pug']
-        }
-      }
-    }
+// より高速なビルドのための設定
+pugPlugin({
+  buildOptions: {
+    cache: true,           // キャッシュ有効化
+    inlineRuntimeFunctions: false,  // ランタイム関数の外部化
+    compileDebug: false    // デバッグ情報削除
   },
-  optimizeDeps: {
-    include: ['pug']
+  serveOptions: {
+    cache: false,          // 開発時はキャッシュ無効
+    compileDebug: true     // 開発時はデバッグ有効
   }
 })
 ```
@@ -298,21 +290,16 @@ else
 ### 他のPugプラグインからの移行
 
 ```diff
-// vite.config.ts
 - import { createPugPlugin } from 'vite-plugin-pug'
 + import pugPlugin from 'vite-pug-static-builder'
 
-export default defineConfig({
-  plugins: [
--   createPugPlugin({
--     pugOptions: { basedir: './src' }
--   })
-+   pugPlugin({
-+     buildOptions: { basedir: './src' },
-+     serveOptions: { basedir: './src' }
-+   })
-  ]
-})
+- createPugPlugin({
+-   pugOptions: { basedir: './src' }
+- })
++ pugPlugin({
++   buildOptions: { basedir: './src' },
++   serveOptions: { basedir: './src' }
++ })
 ```
 
 ## ライセンス
