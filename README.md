@@ -304,7 +304,7 @@ else
 
 ## ライセンス
 
-[MIT](./LICENSE) © 2025 ozekimasaki
+[MIT](./LICENSE) © 2025 maigo999
 
 ## 貢献
 
