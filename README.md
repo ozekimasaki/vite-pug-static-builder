@@ -6,26 +6,14 @@
 [![Pug](https://img.shields.io/badge/Pug-a86454?style=flat-square&logo=pug&logoColor=white)](https://pugjs.org/)
 [![Vitest](https://img.shields.io/badge/Vitest-6E9F18?style=flat-square&logo=vitest&logoColor=white)](https://vitest.dev/)
 
-**Vite 7 & Vitest 3.2対応版** - Vite + Pugを使用した高性能静的サイトビルダー
+**Vite 6 & 7 および Vitest 3.2対応版** - Vite + Pugを使用した高性能静的サイトビルダー
 
 複数のPugファイルを効率的に静的HTMLファイルとしてビルドできる、最新のViteプラグインです。
+Vite 6 と Vite 7 の両方のバージョンをサポートしています。
 
-## ✨ 新機能（v1.0.0）
+## ✨ 主な特徴
 
-### 🚀 Vite 7対応
-- **Environment API**: 新しいVite 7のEnvironment APIに完全対応
-- **最新型システム**: TypeScript 5.6の最新機能を活用した型安全性の向上
-- **パフォーマンス向上**: Vite 7の高速化されたビルドシステムを活用
-
-### 🧪 Vitest 3.2対応
-- **Projects API**: workspace → projectsへの移行完了
-- **Enhanced Coverage**: v8カバレッジプロバイダーによる詳細なテストカバレッジ
-- **型チェック**: TypeScriptの型チェックを統合したテスト実行
-- **並列実行**: マルチスレッドによる高速テスト実行
-
-## 特徴
-
-- 🚀 **超高速ビルド**: Vite 7の最新ビルドシステムによる極速開発体験
+- 🚀 **高速ビルド**: Vite のビルドシステムによる高速な開発体験
 - 📝 **Pugサポート**: Pugテンプレートエンジンで効率的なHTML作成
 - 🔄 **開発時リアルタイム更新**: HMR (Hot Module Replacement) 対応
 - 📱 **静的サイト生成**: 本番環境向けに最適化された静的HTMLファイルを生成
@@ -49,8 +37,8 @@ pnpm add vite-pug-static-builder
 ## 必要環境
 
 - **Node.js**: 18.0.0以上
-- **Vite**: 7.0.0-beta.0以上
-- **Pug**: 3.0.0以上
+- **Vite**: ^6.0.0 || ^7.0.0-beta.0
+- **Pug**: ^3.0.0
 
 ## 基本的な使用方法
 
@@ -202,14 +190,23 @@ npm run preview
 npm run type-check
 
 # テスト実行（Vitest 3.2）
+# Vite 7 環境で実行されます
 npm test
 
-# カバレッジ付きテスト
+# Vite 6 環境でテストを実行
+npm run test:vite6
+
+# カバレッジ付きテスト (Vite 7環境)
 npm run coverage
 
 # ウォッチモードでテスト
 npm run test:watch
 ```
+
+**開発時の注意点:**
+
+テストを実行する際には、対象としたい Vite のメジャーバージョンに応じて、適切なスクリプト (`npm test` または `npm run test:vite6`) を選択するか、`VITE_MAJOR_VERSION` 環境変数を設定してください。
+これにより、テストスイート内のバージョン固有のロジックが正しく機能します。
 
 ## TypeScript統合
 
