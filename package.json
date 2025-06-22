@@ -1,6 +1,6 @@
 {
   "name": "vite-pug-static-builder",
-  "version": "1.0.1",
+  "version": "1.0.2-beta.0",
   "description": "Vite + Pugを使用した静的サイトビルダー - 複数のPugファイルを静的HTMLとしてビルドするViteプラグイン",
   "author": "maigo999",
   "license": "MIT",
@@ -36,12 +36,12 @@
   "scripts": {
     "clean": "rimraf ./dist",
     "type-check": "tsc --noEmit -p .",
-    "test:vite6": "VITE_MAJOR_VERSION=6 vitest run",
-    "test:vite7": "VITE_MAJOR_VERSION=7 vitest run",
+    "test:vite6": "cross-env VITE_MAJOR_VERSION=6 vitest run",
+    "test:vite7": "cross-env VITE_MAJOR_VERSION=7 vitest run",
     "test": "pnpm test:vite7",
     "test:update": "vitest run -u",
     "test:watch": "vitest",
-    "coverage": "VITE_MAJOR_VERSION=7 vitest run --coverage",
+    "coverage": "cross-env VITE_MAJOR_VERSION=7 vitest run --coverage",
     "tsc": "tsc -p .",
     "build": "pnpm clean && pnpm tsc",
     "prepublishOnly": "pnpm coverage && pnpm build"
@@ -60,6 +60,7 @@
     "@types/pug": "^2.0.10",
     "@vitest/coverage-v8": "^3.2.1",
     "axios": "^1.7.9",
+    "cross-env": "^7.0.3",
     "fs-extra": "^11.3.0",
     "rimraf": "^6.0.1",
     "typescript": "^5.6.3",
