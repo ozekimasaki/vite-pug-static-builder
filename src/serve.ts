@@ -45,6 +45,7 @@ const createMiddleware = (
   server: ViteDevServer,
 ): Middleware => {
   const { options, locals, ignorePattern } = settings
+  const pugOptions = { pretty: true, ...options }
   const ignoreMatcher = ignorePattern ? picomatch(ignorePattern) : null
 
   return async (req, res, next) => {
@@ -100,7 +101,7 @@ const createMiddleware = (
         server.moduleGraph,
         url,
         pugAbsPath,
-        options,
+        pugOptions,
         locals,
       )
 

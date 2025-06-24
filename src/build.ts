@@ -24,6 +24,7 @@ export interface BuildSettings {
  */
 export const vitePluginPugBuild = (settings?: BuildSettings): Plugin => {
   const { options, locals } = settings ?? {}
+  const pugOptions = { pretty: true, ...options }
   const pathMap = new Map<string, string>()
   let root = ''
 
@@ -62,7 +63,7 @@ export const vitePluginPugBuild = (settings?: BuildSettings): Plugin => {
         // PugファイルのHTMLへの変換
         if (pathMap.has(id)) {
           const pugPath = pathMap.get(id)!
-          const compiledTemplate = compileFile(pugPath, options)
+          const compiledTemplate = compileFile(pugPath, pugOptions)
           const html = compiledTemplate(locals)
           
           outputLog(
