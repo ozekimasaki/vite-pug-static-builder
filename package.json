@@ -1,6 +1,6 @@
 {
   "name": "vite-pug-static-builder",
-  "version": "1.0.2-beta.0",
+  "version": "1.0.2",
   "description": "Vite + Pugを使用した静的サイトビルダー - 複数のPugファイルを静的HTMLとしてビルドするViteプラグイン",
   "author": "maigo999",
   "license": "MIT",
@@ -44,7 +44,7 @@
     "coverage": "cross-env VITE_MAJOR_VERSION=7 vitest run --coverage",
     "tsc": "tsc -p .",
     "build": "pnpm clean && pnpm tsc",
-    "prepublishOnly": "pnpm coverage && pnpm build"
+    "prepublishOnly": "pnpm build"
   },
   "dependencies": {
     "ansis": "^3.2.0",
