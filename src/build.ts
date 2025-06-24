@@ -62,9 +62,8 @@ export const vitePluginPugBuild = (settings?: BuildSettings): Plugin => {
         // PugファイルのHTMLへの変換
         if (pathMap.has(id)) {
           const pugPath = pathMap.get(id)!
-          const pugOptions = { ...options, ...locals }
-          const compiledTemplate = compileFile(pugPath, pugOptions)
-          const html = compiledTemplate()
+          const compiledTemplate = compileFile(pugPath, options)
+          const html = compiledTemplate(locals)
           
           outputLog(
             'info',
