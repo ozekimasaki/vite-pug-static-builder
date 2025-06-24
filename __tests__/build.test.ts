@@ -29,12 +29,16 @@ const config: UserConfig = {
   },
   plugins: [
     pugPlugin({
-      buildOptions: { basedir: srcdir },
-      buildLocals: { mode: 'build' },
-      serveOptions: { basedir: srcdir },
-      serveLocals: { mode: 'serve' },
-      ignorePattern: ['/ignore/**'],
-      reload: true,
+      build: {
+        options: { basedir: srcdir },
+        locals: { mode: 'build' },
+      },
+      serve: {
+        options: { basedir: srcdir },
+        locals: { mode: 'serve' },
+        ignorePattern: ['/ignore/**'],
+        reload: true,
+      },
     }),
   ],
 } as const

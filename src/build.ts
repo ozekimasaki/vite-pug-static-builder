@@ -10,7 +10,7 @@ import { outputLog } from './utils.js'
 /**
  * Pugビルド設定
  */
-interface BuildSettings {
+export interface BuildSettings {
   /** Pugコンパイルオプション */
   readonly options?: Pug.Options
   /** Pugローカル変数オブジェクト */
@@ -22,8 +22,8 @@ interface BuildSettings {
  * @param settings - ビルド設定
  * @returns Viteプラグイン
  */
-export const vitePluginPugBuild = (settings: BuildSettings): Plugin => {
-  const { options, locals } = settings
+export const vitePluginPugBuild = (settings?: BuildSettings): Plugin => {
+  const { options, locals } = settings ?? {}
   const pathMap = new Map<string, string>()
 
   return {
