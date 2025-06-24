@@ -14,7 +14,7 @@ import { compilePug } from './pug.js'
 /**
  * 開発サーバー設定
  */
-interface ServeSettings {
+export interface ServeSettings {
   /** Pugコンパイルオプション */
   readonly options?: Pug.Options
   /** Pugローカル変数オブジェクト */
@@ -131,8 +131,8 @@ const createMiddleware = (
  * @param settings - サーブ設定
  * @returns Viteプラグイン
  */
-export const vitePluginPugServe = (settings: ServeSettings): Plugin => {
-  const { reload } = settings
+export const vitePluginPugServe = (settings?: ServeSettings): Plugin => {
+  const { reload } = settings ?? {}
   let server: ViteDevServer
 
   return {
@@ -142,7 +142,7 @@ export const vitePluginPugServe = (settings: ServeSettings): Plugin => {
     
     configureServer(_server: ViteDevServer): void {
       server = _server
-      server.middlewares.use(createMiddleware(settings, server))
+      server.middlewares.use(createMiddleware(settings ?? {}, server))
     },
 
     handleHotUpdate(context): void {

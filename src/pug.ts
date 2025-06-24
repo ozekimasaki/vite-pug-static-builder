@@ -14,37 +14,37 @@ interface CompiledTemplateWithDeps extends Pug.compileTemplate {
 }
 
 /**
- * モジュールグラフに祖先モジュールを反映
+ * 依存関係をモジュールグラフに登録
  * @param moduleGraph - モジュールグラフ
  * @param compiledModule - HTMLにコンパイルされるPugモジュール
- * @param ancestors - compiledModuleの祖先ファイルパス配列
+ * @param dependencies - compiledModuleの依存ファイルパス配列
  */
-const reflectAncestorsIntoModuleMap = (
+const registerDependencies = (
   moduleGraph: ModuleGraph,
   compiledModule: ModuleNode,
-  ancestors: readonly string[],
+  dependencies: readonly string[],
 ): void => {
   // モジュールマップに祖先を追加
-  for (const ancestor of ancestors) {
+  for (const dependency of dependencies) {
     try {
-      const ancestorModules = moduleGraph.getModulesByFile(ancestor)
-      let ancestorModule: ModuleNode | undefined
+      const depModules = moduleGraph.getModulesByFile(dependency)
+      let depModule: ModuleNode | undefined
       
-      if (ancestorModules && ancestorModules.size > 0) {
-        ancestorModule = [...ancestorModules][0]
+      if (depModules && depModules.size > 0) {
+        depModule = [...depModules][0]
       } else {
         // Vite 7では createFileOnlyEntry の代わりに ensureEntryFromUrl を使用
-        const ancestorUrl = ancestor.replace(process.cwd(), '').replace(/\\/g, '/')
-        ancestorModule = moduleGraph.getModuleById(ancestorUrl) || undefined
+        const depUrl = dependency.replace(process.cwd(), '').replace(/\\/g, '/')
+        depModule = moduleGraph.getModuleById(depUrl) || undefined
       }
       
-      if (ancestorModule) {
-        ancestorModule.importers.add(compiledModule) // TODO: 依存関係から削除された場合の処理
-        compiledModule.importedModules.add(ancestorModule) // オプション
+      if (depModule) {
+        depModule.importers.add(compiledModule) // TODO: 依存関係から削除された場合の処理
+        compiledModule.importedModules.add(depModule) // オプション
       }
     } catch (error) {
       // 祖先モジュールの処理に失敗した場合はログを出力して続行
-      outputLog('warn', 'ancestor module processing failed:', ancestor)
+      outputLog('warn', 'dependency module processing failed:', dependency)
     }
   }
 }
@@ -95,9 +95,9 @@ export const compilePug = async (
     ) as CompiledTemplateWithDeps
 
     // Pugコンパイラから祖先情報を取得
-    const ancestors = compiledTemplate.dependencies
-    if (ancestors.length > 0) {
-      reflectAncestorsIntoModuleMap(moduleGraph, compiledModule, ancestors)
+    const dependencies = compiledTemplate.dependencies
+    if (dependencies.length > 0) {
+      registerDependencies(moduleGraph, compiledModule, dependencies)
     }
 
     // HTML生成
@@ -109,13 +109,8 @@ export const compilePug = async (
     
     return true
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : String(error)
-    outputLog('error', 'compilation failed:', pugPath, errorMessage)
+    outputLog('error', 'compilation failed:', pugPath, String(error))
     
-    if (error instanceof Error) {
-      return error
-    }
-    
-    return new Error(`Pug compilation failed: ${errorMessage}`)
+    return error instanceof Error ? error : new Error(String(error))
   }
 }
