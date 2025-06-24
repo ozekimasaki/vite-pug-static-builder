@@ -17,6 +17,7 @@ Vite 6 と Vite 7 の両方のバージョンをサポートしています。
 - 📝 **Pugサポート**: Pugテンプレートエンジンで効率的なHTML作成
 - 🔄 **開発時リアルタイム更新**: HMR (Hot Module Replacement) 対応
 - 📱 **静的サイト生成**: 本番環境向けに最適化された静的HTMLファイルを生成
+- ✨ **整形済みHTML出力**: デフォルトで可読性の高い、整形済みHTMLを出力
 - 🎨 **高度なカスタマイズ**: 豊富な設定オプションでプロジェクトに合わせた細かな調整
 - 🛡️ **型安全**: TypeScript完全対応による開発時エラーの早期発見
 - 🧪 **テスト統合**: Vitest 3.2による包括的なテストサポート
@@ -53,16 +54,14 @@ export default defineConfig({
   plugins: [
     pugPlugin({
       buildOptions: {
-        basedir: './src',
-        pretty: true
+        basedir: './src'
       },
       buildLocals: {
         title: 'My Website',
         env: 'production'
       },
       serveOptions: {
-        basedir: './src',
-        pretty: true
+        basedir: './src'
       },
       serveLocals: {
         title: 'My Website (Dev)',
@@ -111,6 +110,24 @@ block content
 
 ## 詳細設定オプション
 
+### Pugオプションの挙動
+
+`buildOptions` と `serveOptions` で指定するPugのオプションには、以下のデフォルト設定が適用されます。
+
+- **`pretty`**:
+  - **デフォルト**: `true`
+  - **説明**: 出力されるHTMLは、読みやすいように整形（インデントと改行）されます。
+  - **上書き**: `pretty: false` を設定すると、HTMLは圧縮され、ファイルサイズが削減されます。これは本番環境でのパフォーマンス向上に役立ちます。
+
+```typescript
+// 本番ビルドでHTMLを圧縮する例
+pugPlugin({
+  buildOptions: {
+    pretty: false // HTMLを圧縮
+  }
+})
+```
+
 ### プラグイン設定
 
 ```typescript
@@ -156,7 +173,6 @@ pugPlugin({
   },
   serveOptions: {
     basedir: './src',
-    pretty: true,  // 開発時は読みやすく
     compileDebug: true,
     cache: false   // 開発時はキャッシュ無効
   },
