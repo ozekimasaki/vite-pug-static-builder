@@ -146,44 +146,64 @@ export const vitePluginPugServe = (settings?: ServeSettings): Plugin => {
       server.middlewares.use(createMiddleware(settings ?? {}, server))
     },
 
-    handleHotUpdate(context): void {
-      const fileModules = server.moduleGraph.getModulesByFile(context.file)
-
-      if (fileModules) {
-        for (const fileModule of fileModules) {
-          for (const importer of fileModule.importers) {
-            if (importer.file && path.extname(importer.file) === '.pug') {
-              server.moduleGraph.invalidateModule(importer)
-            }
-          }
-        }
-      }
-
-      // Pugファイル自体が変更された場合の処理
-      if (path.extname(context.file) === '.pug') {
+    // Vite 7の新しいhotUpdateフックを使用してより効率的な処理を実装
+    hotUpdate(context): void {
+      const { file, timestamp } = context
+      const { environment } = this
+      
+      // Pugファイル自体が変更された場合
+      if (path.extname(file) === '.pug') {
         // 対応するHTMLモジュールのURLを生成
-        const parsedPath = path.parse(context.file)
+        const parsedPath = path.parse(file)
         const htmlUrl = path.posix.format({
           dir: parsedPath.dir.replace(server.config.root, '').replace(/\\/g, '/'),
           name: parsedPath.name,
           ext: '.html',
         })
         
-        // HTMLモジュールを取得して無効化
-        const htmlModule = server.moduleGraph.getModuleById(htmlUrl) || 
-                          server.moduleGraph.urlToModuleMap.get(htmlUrl)
-        
-        if (htmlModule) {
-          // transformResultを明示的にクリアして確実に再コンパイルを実行
-          htmlModule.transformResult = null
-          server.moduleGraph.invalidateModule(htmlModule)
+        // Environment APIを使用してモジュールを取得・無効化（非同期処理を修正）
+        environment.moduleGraph.getModuleByUrl(htmlUrl).then((htmlModule) => {
+          if (htmlModule) {
+            // モジュールを適切に無効化（Vite 7の新しいAPI）
+            environment.moduleGraph.invalidateModule(
+              htmlModule,
+              new Set(),
+              timestamp,
+              true // HMRフラグを明示的にtrue
+            )
+          }
+        }).catch(() => {
+          // モジュールが見つからない場合は無視
+        })
+      }
+
+      // 従来のファイルモジュール無効化処理
+      const fileModules = environment.moduleGraph.getModulesByFile(file)
+      if (fileModules) {
+        const invalidatedModules = new Set<any>() // 型を明示的に指定
+        for (const fileModule of fileModules) {
+          for (const importer of fileModule.importers) {
+            if (importer.file && path.extname(importer.file) === '.pug') {
+              environment.moduleGraph.invalidateModule(
+                importer,
+                invalidatedModules,
+                timestamp,
+                true
+              )
+            }
+          }
         }
       }
 
       // リロード設定に基づいてフルリロードを実行
       if (reload !== false) {
-        context.server.ws.send({ type: 'full-reload' })
+        environment.hot.send({ type: 'full-reload' })
       }
     },
+
+    // 古いhandleHotUpdateフックは削除（Vite 7では非推奨）
   }
 }
+
+
+
