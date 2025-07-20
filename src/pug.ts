@@ -81,10 +81,9 @@ export const compilePug = async (
       // Vite 7ではModuleGraphが自動的にfileToModulesMapを管理
     }
 
-    // モジュールが無効化されていない場合はスキップ
-    if (compiledModule.transformResult) {
-      return true
-    }
+    // 開発モードではtransformResultの有無に関わらず常に最新のコンパイルを実行
+    // これによりファイル変更時の内容更新を確実にする
+    // （本番ビルド時はこの関数は使用されないため性能に影響しない）
 
     // コンパイル開始
     const map = null

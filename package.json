@@ -1,13 +1,13 @@
 {
   "name": "vite-pug-static-builder",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "description": "Vite + Pugを使用した静的サイトビルダー - 複数のPugファイルを静的HTMLとしてビルドするViteプラグイン",
   "author": "maigo999",
   "license": "MIT",
   "homepage": "https://github.com/ozekimasaki/vite-pug-static-builder#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ozekimasaki/vite-pug-static-builder.git"
+    "url": "git+https://github.com/ozekimasaki/vite-pug-static-builder.git"
   },
   "bugs": {
     "url": "https://github.com/ozekimasaki/vite-pug-static-builder/issues"

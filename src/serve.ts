@@ -159,6 +159,27 @@ export const vitePluginPugServe = (settings?: ServeSettings): Plugin => {
         }
       }
 
+      // Pugファイル自体が変更された場合の処理
+      if (path.extname(context.file) === '.pug') {
+        // 対応するHTMLモジュールのURLを生成
+        const parsedPath = path.parse(context.file)
+        const htmlUrl = path.posix.format({
+          dir: parsedPath.dir.replace(server.config.root, '').replace(/\\/g, '/'),
+          name: parsedPath.name,
+          ext: '.html',
+        })
+        
+        // HTMLモジュールを取得して無効化
+        const htmlModule = server.moduleGraph.getModuleById(htmlUrl) || 
+                          server.moduleGraph.urlToModuleMap.get(htmlUrl)
+        
+        if (htmlModule) {
+          // transformResultを明示的にクリアして確実に再コンパイルを実行
+          htmlModule.transformResult = null
+          server.moduleGraph.invalidateModule(htmlModule)
+        }
+      }
+
       // リロード設定に基づいてフルリロードを実行
       if (reload !== false) {
         context.server.ws.send({ type: 'full-reload' })
