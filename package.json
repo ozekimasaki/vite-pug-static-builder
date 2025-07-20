@@ -1,6 +1,6 @@
 {
   "name": "vite-pug-static-builder",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Vite + Pugを使用した静的サイトビルダー - 複数のPugファイルを静的HTMLとしてビルドするViteプラグイン",
   "author": "maigo999",
   "license": "MIT",
