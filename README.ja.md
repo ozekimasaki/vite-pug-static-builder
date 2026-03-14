@@ -6,23 +6,23 @@
 [![Pug](https://img.shields.io/badge/Pug-a86454?style=flat-square&logo=pug&logoColor=white)](https://pugjs.org/)
 [![Vitest](https://img.shields.io/badge/Vitest-6E9F18?style=flat-square&logo=vitest&logoColor=white)](https://vitest.dev/)
 
-**[日本語](./README.ja.md)** | **[中文](./README.zh-CN.md)**
+**[English](./README.md)** | **[中文](./README.zh-CN.md)**
 
-**Vite 6 / 7 / 8 compatible** — A high-performance static site builder using Vite + Pug.
+**Vite 6 / 7 / 8 対応** — Vite + Pugを使用した高性能静的サイトビルダー
 
-A modern Vite plugin that efficiently builds multiple Pug files into static HTML files.
-Supports Vite 6, 7, and 8.
+複数のPugファイルを効率的に静的HTMLファイルとしてビルドできる、最新のViteプラグインです。
+Vite 6 / 7 / 8 をサポートしています。
 
-## ✨ Features
+## ✨ 主な特徴
 
-- 🚀 **Fast builds**: Powered by Vite's build system
-- 📝 **Pug support**: Write HTML efficiently with the Pug template engine
-- 🔄 **Live reload**: HMR (Hot Module Replacement) during development
-- 📱 **Static site generation**: Produces optimized static HTML for production
-- 🎨 **Highly customizable**: Rich configuration options to fit your project
-- 🛡️ **Type-safe**: Full TypeScript support for early error detection
+- 🚀 **高速ビルド**: Vite のビルドシステムによる高速な開発体験
+- 📝 **Pugサポート**: Pugテンプレートエンジンで効率的なHTML作成
+- 🔄 **開発時リアルタイム更新**: HMR (Hot Module Replacement) 対応
+- 📱 **静的サイト生成**: 本番環境向けに最適化された静的HTMLファイルを生成
+- 🎨 **高度なカスタマイズ**: 豊富な設定オプションでプロジェクトに合わせた細かな調整
+- 🛡️ **型安全**: TypeScript完全対応による開発時エラーの早期発見
 
-## Installation
+## インストール
 
 ```bash
 # npm
@@ -35,15 +35,15 @@ yarn add vite-pug-static-builder
 pnpm add vite-pug-static-builder
 ```
 
-## Requirements
+## 必要環境
 
-- **Node.js**: 18.0.0 or later
+- **Node.js**: 18.0.0以上
 - **Vite**: ^6.0.0 || ^7.0.0 || ^8.0.0
 - **Pug**: ^3.0.0
 
-## Basic Usage
+## 基本的な使用方法
 
-### 1. Vite Configuration
+### 1. Vite設定ファイル
 
 ```typescript
 // vite.config.ts
@@ -76,7 +76,7 @@ export default defineConfig({
 })
 ```
 
-### 2. Project Structure Example
+### 2. プロジェクト構造例
 
 ```
 src/
@@ -87,15 +87,15 @@ src/
 │   ├── index.pug      # → dist/blog/index.html
 │   └── post1.pug      # → dist/blog/post1.html
 ├── _layouts/
-│   └── base.pug       # Layout template
+│   └── base.pug       # レイアウトテンプレート
 ├── _includes/
-│   └── header.pug     # Partial template
+│   └── header.pug     # 部分テンプレート
 └── assets/
     ├── style.css
     └── script.js
 ```
 
-### 3. Pug File Example
+### 3. Pugファイル例
 
 ```pug
 //- src/index.pug
@@ -104,51 +104,51 @@ extends _layouts/base
 block content
   main
     h1= title
-    p Welcome to #{title}!
+    p ようこそ、#{title}へ！
     
     if env === 'development'
-      .dev-info Running in development mode
+      .dev-info 開発モードで実行中
     
     include _includes/header
 ```
 
-## Configuration
+## 詳細設定オプション
 
-### Plugin Options
+### プラグイン設定
 
 ```typescript
 interface Settings {
-  // Build settings
+  // ビルド時の設定
   build?: {
-    // Pug compile options
+    // Pugコンパイルオプション
     options?: Pug.Options
-    // Pug local variables
+    // Pugローカル変数
     locals?: Pug.LocalsObject
   }
 
-  // Dev server settings
+  // 開発サーバー時の設定
   serve?: {
-    // Pug compile options
+    // Pugコンパイルオプション
     options?: Pug.Options
-    // Pug local variables
+    // Pugローカル変数
     locals?: Pug.LocalsObject
-    // Ignore pattern (glob format)
+    // 無視パターン（glob形式）
     ignorePattern?: string | string[]
-    // Hot reload (default: true)
+    // ホットリロード設定（デフォルト: true）
     reload?: boolean
   }
 }
 ```
 
-### Default Pug Options
+### Pugオプションのデフォルト値
 
-The following defaults are applied to `build.options` and `serve.options`:
+`build.options` と `serve.options` には、以下のデフォルト設定が適用されます。
 
-- **`pretty`**: Defaults to `true` (deprecated in Pug 3.x)
+- **`pretty`**: デフォルト `true`（Pug 3.xでは非推奨オプション）
 
-User-specified values in `options` override the defaults.
+ユーザーが `options` で指定した値はデフォルト値を上書きします。
 
-### Advanced Configuration
+### 高度な設定例
 
 ```typescript
 pugPlugin({
@@ -179,47 +179,47 @@ pugPlugin({
       buildTime: 'dev-mode'
     },
     ignorePattern: [
-      '/_*/**',            // Ignore directories starting with underscore
-      '/admin/**',         // Ignore admin directory
-      '/**/*.draft.pug'    // Ignore .draft.pug files
+      '/_*/**',            // アンダースコアで始まるディレクトリを無視
+      '/admin/**',         // adminディレクトリを無視
+      '/**/*.draft.pug'    // .draft.pugファイルを無視
     ],
     reload: true
   }
 })
 ```
 
-## Development Commands
+## 開発コマンド
 
 ```bash
-# Start dev server
+# 開発サーバー起動
 npm run dev
 
-# Production build
+# 本番ビルド
 npm run build
 
-# Preview build
+# ビルドのプレビュー
 npm run preview
 
-# Type check
+# 型チェック
 npm run type-check
 
-# Run tests (Vite 8)
+# テスト実行（Vite 8 環境）
 npm test
 
-# Run tests with Vite 6 / 7
+# Vite 6 / 7 環境でテストを実行
 npm run test:vite6
 npm run test:vite7
 
-# Run tests with coverage
+# カバレッジ付きテスト
 npm run coverage
 
-# Watch mode
+# ウォッチモードでテスト
 npm run test:watch
 ```
 
-## TypeScript Integration
+## TypeScript統合
 
-Full TypeScript support ensures type safety across your configuration and Pug templates:
+完全なTypeScript対応により、設定ファイルやPugテンプレート内でも型安全性を確保できます：
 
 ```typescript
 // types/pug.d.ts
@@ -241,31 +241,31 @@ interface ImportMeta {
 }
 ```
 
-## Performance Optimization
+## パフォーマンス最適化
 
 ```typescript
 pugPlugin({
   build: {
     options: {
-      cache: true,                   // Enable caching
-      inlineRuntimeFunctions: false, // Externalize runtime functions
-      compileDebug: false            // Remove debug info
+      cache: true,                   // キャッシュ有効化
+      inlineRuntimeFunctions: false, // ランタイム関数の外部化
+      compileDebug: false            // デバッグ情報削除
     }
   },
   serve: {
     options: {
-      cache: false,        // Disable cache in development
-      compileDebug: true   // Enable debug in development
+      cache: false,        // 開発時はキャッシュ無効
+      compileDebug: true   // 開発時はデバッグ有効
     }
   }
 })
 ```
 
-## Troubleshooting
+## トラブルシューティング
 
-### Common Issues
+### よくある問題と解決法
 
-**Q: Browser doesn't update when Pug files change**
+**Q: Pugファイルが更新されてもブラウザが更新されない**
 ```typescript
 pugPlugin({
   serve: {
@@ -274,7 +274,7 @@ pugPlugin({
 })
 ```
 
-**Q: Pug dependencies aren't resolved correctly during build**
+**Q: ビルド時にPugの依存関係が正しく解決されない**
 ```typescript
 pugPlugin({
   build: {
@@ -285,18 +285,18 @@ pugPlugin({
 })
 ```
 
-**Q: Error handling in the dev server**
+**Q: 開発サーバーでのエラーハンドリング**
 ```pug
-//- Check for variable existence to prevent errors
+//- エラーを防ぐため、変数の存在チェックを行う
 if typeof title !== 'undefined'
   h1= title
 else
   h1 Default Title
 ```
 
-## Migration Guide
+## マイグレーションガイド
 
-### Migrating from Other Pug Plugins
+### 他のPugプラグインからの移行
 
 ```diff
 - import { createPugPlugin } from 'vite-plugin-pug'
@@ -315,42 +315,42 @@ else
 + })
 ```
 
-## License
+## ライセンス
 
 [MIT](./LICENSE) © 2025 maigo999
 
-## Contributing
+## 貢献
 
-Pull requests and issues are welcome!
+プルリクエストや Issue の報告を歓迎します！
 
-1. Fork this repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+1. このリポジトリをフォーク
+2. フィーチャーブランチを作成 (`git checkout -b feature/amazing-feature`)
+3. 変更をコミット (`git commit -m 'Add amazing feature'`)
+4. ブランチにプッシュ (`git push origin feature/amazing-feature`)
+5. プルリクエストを作成
 
-## Changelog
+## 変更履歴
 
 ### v1.1.5 (2026-03-13)
-- 🌐 Added multilingual README (English, Japanese, Chinese)
+- 🌐 多言語README追加（英語・日本語・中国語）
 
 ### v1.1.4 (2026-03-13)
-- 📝 Fixed README to match actual API implementation
+- 📝 READMEを実装のAPIに合わせて修正
 
 ### v1.1.3 (2026-03-13)
-- 🚀 Vite 8 support
-- 📦 Added `@types/node` to devDependencies
+- 🚀 Vite 8 対応
+- 📦 `@types/node` を devDependencies に追加
 
 ### v1.1.2
-- 🚀 Vite 7 stable support
-- 🧪 Vitest 3.2 support
+- 🚀 Vite 7 安定版対応
+- 🧪 Vitest 3.2 対応
 
 ### v1.0.0
-- 🚀 Initial release
-- ✨ Environment API support
-- 🛡️ Full TypeScript support
+- 🚀 初回リリース
+- ✨ Environment API 対応
+- 🛡️ TypeScript 完全対応
 
-## Links
+## 関連リンク
 
 - [Vite](https://vitejs.dev/)
 - [Pug](https://pugjs.org/)
