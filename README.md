@@ -37,9 +37,9 @@ pnpm add vite-pug-static-builder
 
 ## Requirements
 
-- **Node.js**: 18.0.0 or later
-- **Vite**: ^6.0.0 || ^7.0.0 || ^8.0.0
-- **Pug**: ^3.0.0
+- **Node.js**: 18.0.0 or later (the repository's development toolchain is pinned to Node 22 via [`.prototools`](./.prototools))
+- **Vite**: ^6.0.0 || ^7.0.0 || ^8.0.0 (peer dependency)
+- **Pug**: ^3.0.0 (peer dependency)
 
 ## Basic Usage
 
@@ -190,32 +190,40 @@ pugPlugin({
 
 ## Development Commands
 
+This repository uses [pnpm](https://pnpm.io/) as its package manager (see `pnpm-lock.yaml`); the npm scripts below invoke `pnpm` internally.
+
 ```bash
-# Start dev server
-npm run dev
+# Install dependencies
+pnpm install
 
-# Production build
-npm run build
+# Type check (tsc --noEmit)
+pnpm type-check
 
-# Preview build
-npm run preview
+# Build the plugin (clean + tsc emit to ./dist)
+pnpm build
 
-# Type check
-npm run type-check
+# Remove the build output (./dist)
+pnpm clean
 
-# Run tests (Vite 8)
-npm test
+# Run tests against Vite 8 (alias: pnpm test:vite8)
+pnpm test
 
-# Run tests with Vite 6 / 7
-npm run test:vite6
-npm run test:vite7
+# Run tests against a specific Vite major version
+pnpm test:vite6
+pnpm test:vite7
+pnpm test:vite8
 
-# Run tests with coverage
-npm run coverage
+# Run tests in watch mode
+pnpm test:watch
 
-# Watch mode
-npm run test:watch
+# Update test snapshots
+pnpm test:update
+
+# Run tests with coverage (Vite 8)
+pnpm coverage
 ```
+
+> **Note:** The test scripts run [Vitest](https://vitest.dev/) across multiple Vite major versions via the `VITE_MAJOR_VERSION` environment variable (see `cross-env` usage in `package.json`). No test files are committed yet, so these commands report "No test files found" until tests are added.
 
 ## TypeScript Integration
 
@@ -313,6 +321,19 @@ else
 +     options: { basedir: './src' }
 +   }
 + })
+```
+
+## Source Structure
+
+The plugin is written in TypeScript under `src/` and compiled to `dist/` with `tsc`. It exports a single default function that returns **two** Vite plugins — one for `build`, one for `serve`.
+
+```
+src/
+├── index.ts   # Default export; merges user settings and returns [build, serve] plugins
+├── build.ts   # `apply: 'build'` plugin: resolves .pug → .html ids and compiles via pug.compileFile
+├── serve.ts   # `apply: 'serve'` plugin: Connect middleware + hotUpdate hook for the dev server
+├── pug.ts     # Dev-server Pug compilation and Vite module-graph dependency registration/invalidation
+└── utils.ts   # `outputLog` helper built on Vite's logger and ansis for colored output
 ```
 
 ## License
