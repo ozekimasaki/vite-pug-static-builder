@@ -4,7 +4,7 @@ import { URL } from 'node:url'
 import type http from 'node:http'
 
 import type Pug from 'pug'
-import type { Plugin, ViteDevServer, Connect } from 'vite'
+import type { Plugin, ViteDevServer, Connect, EnvironmentModuleNode } from 'vite'
 import { send } from 'vite'
 import type Picomatch from 'picomatch'
 import picomatch from 'picomatch'
@@ -180,7 +180,7 @@ export const vitePluginPugServe = (settings?: ServeSettings): Plugin => {
       // 従来のファイルモジュール無効化処理
       const fileModules = environment.moduleGraph.getModulesByFile(file)
       if (fileModules) {
-        const invalidatedModules = new Set<any>() // 型を明示的に指定
+        const invalidatedModules = new Set<EnvironmentModuleNode>()
         for (const fileModule of fileModules) {
           for (const importer of fileModule.importers) {
             if (importer.file && path.extname(importer.file) === '.pug') {
