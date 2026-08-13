@@ -37,7 +37,7 @@ pnpm add vite-pug-static-builder
 
 ## Requirements
 
-- **Node.js**: 18.0.0 or later
+- **Node.js**: 20.19.0 or later (or 22.12.0+)
 - **Vite**: ^6.0.0 || ^7.0.0 || ^8.0.0
 - **Pug**: ^3.0.0
 
@@ -140,13 +140,12 @@ interface Settings {
 }
 ```
 
-### Default Pug Options
+### HTML formatting
 
-The following defaults are applied to `build.options` and `serve.options`:
+Pug 3 removed the `pretty` option. This plugin does not re-indent compiled HTML.
+Format `dist/**/*.html` in the project if you need readable output.
 
-- **`pretty`**: Defaults to `true` (deprecated in Pug 3.x)
-
-User-specified values in `options` override the defaults.
+`buildOptions` and `watch` still work as aliases for `build.options` / `serve.options` and `serve.reload`, but they log a deprecation warning.
 
 ### Advanced Configuration
 
@@ -330,6 +329,14 @@ Pull requests and issues are welcome!
 5. Open a Pull Request
 
 ## Changelog
+
+### v1.2.0
+- Stopped applying Pug 2's `pretty: true` default (removed in Pug 3)
+- Dev 404 responses now use HTTP 404 instead of 200
+- Full reload runs only when a Pug file or its includes change (CSS/JS HMR is left to Vite)
+- Build watches Pug `include` / `extends` dependencies
+- `buildOptions` / `watch` remain as deprecated aliases
+- Updated `pug` to 3.0.4 and aligned Vite 8 / picomatch types
 
 ### v1.1.5 (2026-03-13)
 - 🌐 Added multilingual README (English, Japanese, Chinese)

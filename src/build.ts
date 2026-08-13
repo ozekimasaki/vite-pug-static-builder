@@ -1,11 +1,11 @@
-import fs from 'node:fs'
+import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 
-import type Pug from 'pug'
 import { compileFile } from 'pug'
+import type Pug from 'pug'
 import type { Plugin } from 'vite'
 
-import { outputLog } from './utils.js'
+import { outputLog, pathExists, pugDependencies, stripQueryAndHash } from './utils.js'
 
 /**
  * Pugビルド設定
@@ -19,12 +19,9 @@ export interface BuildSettings {
 
 /**
  * Vite用Pugビルドプラグイン
- * @param settings - ビルド設定
- * @returns Viteプラグイン
  */
 export const vitePluginPugBuild = (settings?: BuildSettings): Plugin => {
   const { options, locals } = settings ?? {}
-  const pugOptions = { pretty: true, ...options }
   const pathMap = new Map<string, string>()
   let root = ''
 
@@ -32,14 +29,14 @@ export const vitePluginPugBuild = (settings?: BuildSettings): Plugin => {
     name: 'vite-plugin-pug-build',
     enforce: 'pre',
     apply: 'build',
-    
+
     configResolved(config) {
       root = config.root
     },
 
     resolveId(source: string): string | null {
-      const parsedPath = path.parse(source)
-      
+      const parsedPath = path.parse(stripQueryAndHash(source))
+
       if (parsedPath.ext !== '.pug') {
         return null
       }
@@ -49,40 +46,37 @@ export const vitePluginPugBuild = (settings?: BuildSettings): Plugin => {
         name: parsedPath.name,
         ext: '.html',
       })
-      
-      pathMap.set(pathAsHtml, source)
+
+      pathMap.set(pathAsHtml, stripQueryAndHash(source))
       return pathAsHtml
     },
 
-    load(id: string): string | null {
-      if (path.extname(id) !== '.html') {
+    async load(id: string): Promise<string | null> {
+      const cleanId = stripQueryAndHash(id)
+      if (path.extname(cleanId) !== '.html') {
         return null
       }
 
       try {
-        // PugファイルのHTMLへの変換
-        if (pathMap.has(id)) {
-          const pugPath = pathMap.get(id)!
-          const compiledTemplate = compileFile(pugPath, pugOptions)
-          const html = compiledTemplate(locals)
-          
-          outputLog(
-            'info',
-            'compiled:',
-            path.relative(root, pugPath),
-          )
-          
-          return html
+        const pugPath = pathMap.get(cleanId)
+        if (pugPath) {
+          const compiledTemplate = compileFile(pugPath, options)
+          this.addWatchFile(pugPath)
+          for (const dependency of pugDependencies(compiledTemplate)) {
+            this.addWatchFile(dependency)
+          }
+
+          outputLog('info', 'compiled:', path.relative(root, pugPath))
+          return compiledTemplate(locals)
         }
 
-        // 既存のHTMLファイルの読み込み
-        if (fs.existsSync(id)) {
-          return fs.readFileSync(id, 'utf-8')
+        if (await pathExists(cleanId)) {
+          return await readFile(cleanId, 'utf-8')
         }
       } catch (error) {
-        // エラーログの出力
-        const errorMessage = error instanceof Error ? error.message : String(error)
-        outputLog('error', 'compilation failed:', id, errorMessage)
+        const errorMessage =
+          error instanceof Error ? error.message : String(error)
+        outputLog('error', 'compilation failed:', cleanId, errorMessage)
         throw error
       }
 

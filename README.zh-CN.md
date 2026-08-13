@@ -37,7 +37,7 @@ pnpm add vite-pug-static-builder
 
 ## 环境要求
 
-- **Node.js**：18.0.0 或更高版本
+- **Node.js**：20.19.0 或更高版本（或 22.12.0+）
 - **Vite**：^6.0.0 || ^7.0.0 || ^8.0.0
 - **Pug**：^3.0.0
 
@@ -140,13 +140,12 @@ interface Settings {
 }
 ```
 
-### Pug 选项默认值
+### HTML 格式化
 
-`build.options` 和 `serve.options` 应用以下默认设置：
+Pug 3 已移除 `pretty` 选项。本插件不会重新缩进编译后的 HTML。
+如需可读输出，请在项目中格式化 `dist/**/*.html`。
 
-- **`pretty`**：默认为 `true`（在 Pug 3.x 中已弃用）
-
-用户在 `options` 中指定的值会覆盖默认值。
+`buildOptions` 和 `watch` 仍可作为 `build.options` / `serve.options` 与 `serve.reload` 的别名使用，但会输出弃用警告。
 
 ### 高级配置
 
@@ -330,6 +329,14 @@ else
 5. 创建 Pull Request
 
 ## 更新日志
+
+### v1.2.0
+- 停止应用 Pug 2 的 `pretty: true` 默认值（Pug 3 已移除）
+- 开发服务器对缺失 HTML 返回 HTTP 404
+- 仅在 Pug 或其 include / extends 变更时执行 full reload
+- 构建时监视 Pug 依赖文件
+- `buildOptions` / `watch` 作为已弃用别名保留
+- 更新 `pug` 3.0.4 以及 Vite 8 / picomatch 类型
 
 ### v1.1.5 (2026-03-13)
 - 🌐 添加多语言 README（英语、日语、中文）
