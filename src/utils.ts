@@ -59,6 +59,14 @@ export function toPosixPath(filePath: string): string {
   return filePath.replace(/\\/g, '/')
 }
 
+/** Vite のモジュール ID 用に拡張子だけ差し替える（セパレータは POSIX） */
+export function replaceExtPosix(filePath: string, ext: string): string {
+  const posixPath = toPosixPath(filePath)
+  const parsed = path.posix.parse(posixPath)
+  const dir = parsed.dir === '/' ? '/' : parsed.dir
+  return path.posix.join(dir, `${parsed.name}${ext}`)
+}
+
 export function pugDependencies(template: object): readonly string[] {
   if (!('dependencies' in template) || !Array.isArray(template.dependencies)) {
     return []
@@ -71,9 +79,6 @@ export function pugDependencies(template: object): readonly string[] {
 export function pugFileToHtmlUrl(file: string, root: string): string {
   const relative = toPosixPath(path.relative(root, file))
   const parsed = path.posix.parse(`/${relative}`)
-  return path.posix.format({
-    dir: parsed.dir,
-    name: parsed.name,
-    ext: '.html',
-  })
+  const dir = parsed.dir === '/' ? '/' : parsed.dir
+  return path.posix.join(dir, `${parsed.name}.html`)
 }

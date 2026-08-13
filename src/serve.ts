@@ -102,7 +102,7 @@ const invalidatePugGraph = async <T extends GraphNode<T>>(params: {
   moduleGraph: GraphLike<T>
 }): Promise<boolean> => {
   const { file, timestamp, root, moduleGraph } = params
-  if (path.extname(file) !== '.pug') {
+  if (path.extname(file).toLowerCase() !== '.pug') {
     return false
   }
 
@@ -118,7 +118,7 @@ const invalidatePugGraph = async <T extends GraphNode<T>>(params: {
     const seen = new Set<T>()
     for (const fileModule of fileModules) {
       for (const importer of fileModule.importers) {
-        if (importer.file && path.extname(importer.file) === '.pug') {
+        if (importer.file && path.extname(importer.file).toLowerCase() === '.pug') {
           moduleGraph.invalidateModule(importer, seen, timestamp, true)
         }
       }

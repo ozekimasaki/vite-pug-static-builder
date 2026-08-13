@@ -331,6 +331,11 @@ else
 
 ## 更新日志
 
+### v1.3.1
+- 将 Vite 模块 ID 规范为 POSIX，使 Windows 上 `resolveId` / `load` 共用同一 pathMap
+- 根目录 Pug 现在映射为 `/index.html`，不再是 `//index.html`
+- CI 在 Ubuntu、macOS 和 Windows 上运行
+
 ### v1.3.0
 - 模块图仍有有效 transform 时不再重新编译 Pug
 - 用 `path.resolve` 解析 HTML 请求路径（兼容 Windows）

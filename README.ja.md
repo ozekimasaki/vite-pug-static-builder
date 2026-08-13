@@ -331,6 +331,11 @@ else
 
 ## 変更履歴
 
+### v1.3.1
+- Vite のモジュール ID を POSIX に揃え、Windows でも `resolveId` / `load` が同じ pathMap を見る
+- ルートの Pug が `//index.html` ではなく `/index.html` になるよう修正
+- CI を Ubuntu / macOS / Windows で実行
+
 ### v1.3.0
 - モジュールグラフに有効な transform が残っているときは Pug を再コンパイルしない
 - HTML リクエストパスを `path.resolve` で解決（Windows 対応）

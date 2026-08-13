@@ -186,11 +186,14 @@ describe(`serve (VITE_MAJOR_VERSION=${process.env.VITE_MAJOR_VERSION ?? 'latest'
         partialPath,
         original.replace('Greeting for', 'Updated greeting for'),
       )
+      if (process.platform === 'win32') {
+        await new Promise((resolve) => setTimeout(resolve, 200))
+      }
       await expect
         .poll(async () => {
           const res = await fetch(`${baseUrl}/index.html`)
           return res.text()
-        }, { timeout: 10000 })
+        }, { timeout: process.platform === 'win32' ? 20000 : 10000 })
         .toContain('Updated greeting for index')
     } finally {
       await fse.writeFile(partialPath, original)

@@ -10,8 +10,10 @@ import {
   outputLog,
   pathExists,
   pugDependencies,
+  replaceExtPosix,
   setPluginLogger,
   stripQueryAndHash,
+  toPosixPath,
 } from './utils.js'
 
 /**
@@ -34,10 +36,10 @@ export const vitePluginPugBuild = (settings?: BuildSettings): Plugin => {
   let root = ''
 
   const forgetTemplate = (file: string): void => {
-    const normalized = path.normalize(file)
+    const normalized = toPosixPath(file)
     templateCache.delete(normalized)
     for (const [pugPath, compiled] of templateCache) {
-      if (pugDependencies(compiled).includes(normalized)) {
+      if (pugDependencies(compiled).some((dep) => toPosixPath(dep) === normalized)) {
         templateCache.delete(pugPath)
       }
     }
@@ -58,41 +60,38 @@ export const vitePluginPugBuild = (settings?: BuildSettings): Plugin => {
     },
 
     watchChange(id) {
-      if (path.extname(id) === '.pug') {
+      if (toPosixPath(id).endsWith('.pug')) {
         forgetTemplate(id)
       }
     },
 
     resolveId(source: string): string | null {
-      const parsedPath = path.parse(stripQueryAndHash(source))
+      const pugPath = toPosixPath(stripQueryAndHash(source))
+      const parsedPath = path.posix.parse(pugPath)
 
       if (parsedPath.ext !== '.pug') {
         return null
       }
 
-      const pathAsHtml = path.format({
-        dir: parsedPath.dir,
-        name: parsedPath.name,
-        ext: '.html',
-      })
-
-      pathMap.set(pathAsHtml, stripQueryAndHash(source))
+      const pathAsHtml = replaceExtPosix(pugPath, '.html')
+      pathMap.set(pathAsHtml, pugPath)
       return pathAsHtml
     },
 
     async load(id: string): Promise<string | null> {
-      const cleanId = stripQueryAndHash(id)
-      if (path.extname(cleanId) !== '.html') {
+      const cleanId = toPosixPath(stripQueryAndHash(id))
+      if (path.posix.extname(cleanId) !== '.html') {
         return null
       }
 
       try {
         const pugPath = pathMap.get(cleanId)
         if (pugPath) {
-          let compiledTemplate = templateCache.get(pugPath)
+          const cacheKey = toPosixPath(pugPath)
+          let compiledTemplate = templateCache.get(cacheKey)
           if (!compiledTemplate) {
             compiledTemplate = compileFile(pugPath, options)
-            templateCache.set(pugPath, compiledTemplate)
+            templateCache.set(cacheKey, compiledTemplate)
           }
           this.addWatchFile(pugPath)
           for (const dependency of pugDependencies(compiledTemplate)) {

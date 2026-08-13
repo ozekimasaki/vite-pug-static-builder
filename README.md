@@ -331,6 +331,11 @@ Pull requests and issues are welcome!
 
 ## Changelog
 
+### v1.3.1
+- Normalize Vite module IDs to POSIX so Windows `resolveId` / `load` share the same pathMap
+- Root-level Pug files now map to `/index.html` instead of `//index.html`
+- CI runs on Ubuntu, macOS, and Windows
+
 ### v1.3.0
 - Skip Pug recompile when the module graph still has a valid transform
 - Resolve HTML request paths with `path.resolve` (Windows-safe)
