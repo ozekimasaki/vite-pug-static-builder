@@ -336,7 +336,7 @@ else
 - Pug本体と include / extends の変更時だけフルリロードする
 - ビルド時に Pug の依存ファイルを watch する
 - `buildOptions` / `watch` は非推奨エイリアスとして残置
-- `pug` 3.0.4 と Vite 8 / picomatch の型を更新
+- `pug` 3.0.4、TypeScript 7.0.2、Vite 8 / picomatch の型を更新
 
 ### v1.1.5 (2026-03-13)
 - 🌐 多言語README追加（英語・日本語・中国語）

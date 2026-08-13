@@ -336,7 +336,7 @@ else
 - 仅在 Pug 或其 include / extends 变更时执行 full reload
 - 构建时监视 Pug 依赖文件
 - `buildOptions` / `watch` 作为已弃用别名保留
-- 更新 `pug` 3.0.4 以及 Vite 8 / picomatch 类型
+- 更新 `pug` 3.0.4、TypeScript 7.0.2 以及 Vite 8 / picomatch 类型
 
 ### v1.1.5 (2026-03-13)
 - 🌐 添加多语言 README（英语、日语、中文）

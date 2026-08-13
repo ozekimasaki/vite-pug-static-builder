@@ -336,7 +336,7 @@ Pull requests and issues are welcome!
 - Full reload runs only when a Pug file or its includes change (CSS/JS HMR is left to Vite)
 - Build watches Pug `include` / `extends` dependencies
 - `buildOptions` / `watch` remain as deprecated aliases
-- Updated `pug` to 3.0.4 and aligned Vite 8 / picomatch types
+- Updated `pug` to 3.0.4, TypeScript 7.0.2, and aligned Vite 8 / picomatch types
 
 ### v1.1.5 (2026-03-13)
 - 🌐 Added multilingual README (English, Japanese, Chinese)
