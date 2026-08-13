@@ -202,12 +202,13 @@ npm run preview
 # 类型检查
 npm run type-check
 
-# 运行测试（Vite 8 环境）
+# 在 Vite 6 / 7 / 8 环境下运行测试
 npm test
 
-# 在 Vite 6 / 7 环境下运行测试
+# 仅针对某个 Vite 大版本运行测试
 npm run test:vite6
 npm run test:vite7
+npm run test:vite8
 
 # 带覆盖率的测试
 npm run coverage

@@ -39,7 +39,7 @@
     "test:vite6": "cross-env VITE_MAJOR_VERSION=6 vitest run",
     "test:vite7": "cross-env VITE_MAJOR_VERSION=7 vitest run",
     "test:vite8": "cross-env VITE_MAJOR_VERSION=8 vitest run",
-    "test": "pnpm test:vite8",
+    "test": "pnpm test:vite6 && pnpm test:vite7 && pnpm test:vite8",
     "test:update": "vitest run -u",
     "test:watch": "vitest",
     "coverage": "cross-env VITE_MAJOR_VERSION=8 vitest run --coverage",

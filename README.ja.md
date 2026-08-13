@@ -202,12 +202,13 @@ npm run preview
 # 型チェック
 npm run type-check
 
-# テスト実行（Vite 8 環境）
+# Vite 6 / 7 / 8 環境でテストを実行
 npm test
 
-# Vite 6 / 7 環境でテストを実行
+# 特定の Vite メジャーだけでテスト
 npm run test:vite6
 npm run test:vite7
+npm run test:vite8
 
 # カバレッジ付きテスト
 npm run coverage

@@ -202,12 +202,13 @@ npm run preview
 # Type check
 npm run type-check
 
-# Run tests (Vite 8)
+# Run tests against Vite 6, 7, and 8
 npm test
 
-# Run tests with Vite 6 / 7
+# Run tests for a single Vite major
 npm run test:vite6
 npm run test:vite7
+npm run test:vite8
 
 # Run tests with coverage
 npm run coverage
