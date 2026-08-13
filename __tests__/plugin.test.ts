@@ -131,7 +131,35 @@ describe(`serve (VITE_MAJOR_VERSION=${process.env.VITE_MAJOR_VERSION ?? 'latest'
 
   test('存在しないHTMLは404を返す', async () => {
     const res = await fetch(`${baseUrl}/nonexistent.html`)
+    expect(res.status).toBe(404)
     expect(await res.text()).toContain('404 Not Found')
+  })
+
+  test('旧APIの buildOptions / watch でも配信できる', async () => {
+    const { createServer } = await loadVite()
+    const legacyServer = await createServer({
+      root: fixtureRoot,
+      logLevel: 'silent',
+      plugins: [
+        vitePluginPugStatic({
+          buildOptions: { basedir: fixtureRoot },
+          watch: true,
+        }),
+      ],
+      server: { host: '127.0.0.1', port: 0 },
+    })
+    await legacyServer.listen()
+    try {
+      const address = legacyServer.httpServer?.address()
+      if (!address || typeof address === 'string') {
+        throw new Error('Failed to get legacy dev server address')
+      }
+      const res = await fetch(`http://127.0.0.1:${address.port}/index.html`)
+      expect(res.status).toBe(200)
+      expect(await res.text()).toContain('Hello from index')
+    } finally {
+      await legacyServer.close()
+    }
   })
 
   test('ignorePatternにマッチするURLはPug変換されない', async () => {
@@ -158,11 +186,14 @@ describe(`serve (VITE_MAJOR_VERSION=${process.env.VITE_MAJOR_VERSION ?? 'latest'
         partialPath,
         original.replace('Greeting for', 'Updated greeting for'),
       )
+      if (process.platform === 'win32') {
+        await new Promise((resolve) => setTimeout(resolve, 200))
+      }
       await expect
         .poll(async () => {
           const res = await fetch(`${baseUrl}/index.html`)
           return res.text()
-        }, { timeout: 10000 })
+        }, { timeout: process.platform === 'win32' ? 20000 : 10000 })
         .toContain('Updated greeting for index')
     } finally {
       await fse.writeFile(partialPath, original)

@@ -23,7 +23,6 @@
     "exactOptionalPropertyTypes": true,
     "noImplicitAny": true,
     "noImplicitThis": true,
-    "alwaysStrict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
@@ -33,9 +32,9 @@
     "forceConsistentCasingInFileNames": true,
     "outDir": "./dist",
     "rootDir": "./src",
-    "baseUrl": ".",
+    "types": ["node"],
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["./src/*"]
     }
   },
   "include": [

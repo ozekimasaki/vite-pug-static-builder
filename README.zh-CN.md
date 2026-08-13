@@ -37,7 +37,7 @@ pnpm add vite-pug-static-builder
 
 ## 环境要求
 
-- **Node.js**：18.0.0 或更高版本
+- **Node.js**：20.19.0 或更高版本（或 22.12.0+）
 - **Vite**：^6.0.0 || ^7.0.0 || ^8.0.0
 - **Pug**：^3.0.0
 
@@ -140,13 +140,12 @@ interface Settings {
 }
 ```
 
-### Pug 选项默认值
+### HTML 格式化
 
-`build.options` 和 `serve.options` 应用以下默认设置：
+Pug 3 已移除 `pretty` 选项。本插件不会重新缩进编译后的 HTML。
+如需可读输出，请在项目中格式化 `dist/**/*.html`。
 
-- **`pretty`**：默认为 `true`（在 Pug 3.x 中已弃用）
-
-用户在 `options` 中指定的值会覆盖默认值。
+`buildOptions` 和 `watch` 仍可作为 `build.options` / `serve.options` 与 `serve.reload` 的别名使用，但会输出弃用警告。
 
 ### 高级配置
 
@@ -203,12 +202,13 @@ npm run preview
 # 类型检查
 npm run type-check
 
-# 运行测试（Vite 8 环境）
+# 在 Vite 6 / 7 / 8 环境下运行测试
 npm test
 
-# 在 Vite 6 / 7 环境下运行测试
+# 仅针对某个 Vite 大版本运行测试
 npm run test:vite6
 npm run test:vite7
+npm run test:vite8
 
 # 带覆盖率的测试
 npm run coverage
@@ -330,6 +330,28 @@ else
 5. 创建 Pull Request
 
 ## 更新日志
+
+### v1.3.1
+- 将 Vite 模块 ID 规范为 POSIX，使 Windows 上 `resolveId` / `load` 共用同一 pathMap
+- 根目录 Pug 现在映射为 `/index.html`，不再是 `//index.html`
+- CI 在 Ubuntu、macOS 和 Windows 上运行
+
+### v1.3.0
+- 模块图仍有有效 transform 时不再重新编译 Pug
+- 用 `path.resolve` 解析 HTML 请求路径（兼容 Windows）
+- 并行检查 HTML / Pug 是否存在；忽略非 GET/HEAD
+- `applyToEnvironment` 仅作用于 client 环境
+- `build --watch` 期间缓存编译结果，`.pug` 变更时丢弃
+- include / extends 在可用时通过 `createFileOnlyEntry` 注册
+- 使用 Vite 的 `config.logger`，尊重 `logLevel: 'silent'`
+
+### v1.2.0
+- 停止应用 Pug 2 的 `pretty: true` 默认值（Pug 3 已移除）
+- 开发服务器对缺失 HTML 返回 HTTP 404
+- 仅在 Pug 或其 include / extends 变更时执行 full reload
+- 构建时监视 Pug 依赖文件
+- `buildOptions` / `watch` 作为已弃用别名保留
+- 更新 `pug` 3.0.4、TypeScript 7.0.2 以及 Vite 8 / picomatch 类型
 
 ### v1.1.5 (2026-03-13)
 - 🌐 添加多语言 README（英语、日语、中文）

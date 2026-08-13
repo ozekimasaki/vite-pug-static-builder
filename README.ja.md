@@ -37,7 +37,7 @@ pnpm add vite-pug-static-builder
 
 ## 必要環境
 
-- **Node.js**: 18.0.0以上
+- **Node.js**: 20.19.0以上（または 22.12.0以上）
 - **Vite**: ^6.0.0 || ^7.0.0 || ^8.0.0
 - **Pug**: ^3.0.0
 
@@ -140,13 +140,12 @@ interface Settings {
 }
 ```
 
-### Pugオプションのデフォルト値
+### HTMLの整形
 
-`build.options` と `serve.options` には、以下のデフォルト設定が適用されます。
+Pug 3 では `pretty` オプションが削除されています。このプラグインはコンパイル結果のHTMLを再インデントしません。
+読みやすいHTMLが必要なら、プロジェクト側で `dist/**/*.html` を整形してください。
 
-- **`pretty`**: デフォルト `true`（Pug 3.xでは非推奨オプション）
-
-ユーザーが `options` で指定した値はデフォルト値を上書きします。
+`buildOptions` と `watch` は `build.options` / `serve.options` と `serve.reload` の別名として残していますが、非推奨の警告を出します。
 
 ### 高度な設定例
 
@@ -203,12 +202,13 @@ npm run preview
 # 型チェック
 npm run type-check
 
-# テスト実行（Vite 8 環境）
+# Vite 6 / 7 / 8 環境でテストを実行
 npm test
 
-# Vite 6 / 7 環境でテストを実行
+# 特定の Vite メジャーだけでテスト
 npm run test:vite6
 npm run test:vite7
+npm run test:vite8
 
 # カバレッジ付きテスト
 npm run coverage
@@ -330,6 +330,28 @@ else
 5. プルリクエストを作成
 
 ## 変更履歴
+
+### v1.3.1
+- Vite のモジュール ID を POSIX に揃え、Windows でも `resolveId` / `load` が同じ pathMap を見る
+- ルートの Pug が `//index.html` ではなく `/index.html` になるよう修正
+- CI を Ubuntu / macOS / Windows で実行
+
+### v1.3.0
+- モジュールグラフに有効な transform が残っているときは Pug を再コンパイルしない
+- HTML リクエストパスを `path.resolve` で解決（Windows 対応）
+- HTML と Pug の存在確認を並列化。GET/HEAD 以外はスキップ
+- `applyToEnvironment` で client 環境に限定
+- `build --watch` 中はコンパイル結果をキャッシュし、`.pug` 変更で破棄
+- include / extends は可能なとき `createFileOnlyEntry` で登録
+- Vite の `config.logger` を使い `logLevel: 'silent'` を尊重する
+
+### v1.2.0
+- Pug 2 由来の `pretty: true` デフォルトを廃止（Pug 3 で削除済み）
+- 開発サーバーの未検出HTMLを HTTP 404 で返す
+- Pug本体と include / extends の変更時だけフルリロードする
+- ビルド時に Pug の依存ファイルを watch する
+- `buildOptions` / `watch` は非推奨エイリアスとして残置
+- `pug` 3.0.4、TypeScript 7.0.2、Vite 8 / picomatch の型を更新
 
 ### v1.1.5 (2026-03-13)
 - 🌐 多言語README追加（英語・日本語・中国語）

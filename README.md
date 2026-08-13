@@ -37,7 +37,7 @@ pnpm add vite-pug-static-builder
 
 ## Requirements
 
-- **Node.js**: 18.0.0 or later
+- **Node.js**: 20.19.0 or later (or 22.12.0+)
 - **Vite**: ^6.0.0 || ^7.0.0 || ^8.0.0
 - **Pug**: ^3.0.0
 
@@ -140,13 +140,12 @@ interface Settings {
 }
 ```
 
-### Default Pug Options
+### HTML formatting
 
-The following defaults are applied to `build.options` and `serve.options`:
+Pug 3 removed the `pretty` option. This plugin does not re-indent compiled HTML.
+Format `dist/**/*.html` in the project if you need readable output.
 
-- **`pretty`**: Defaults to `true` (deprecated in Pug 3.x)
-
-User-specified values in `options` override the defaults.
+`buildOptions` and `watch` still work as aliases for `build.options` / `serve.options` and `serve.reload`, but they log a deprecation warning.
 
 ### Advanced Configuration
 
@@ -203,12 +202,13 @@ npm run preview
 # Type check
 npm run type-check
 
-# Run tests (Vite 8)
+# Run tests against Vite 6, 7, and 8
 npm test
 
-# Run tests with Vite 6 / 7
+# Run tests for a single Vite major
 npm run test:vite6
 npm run test:vite7
+npm run test:vite8
 
 # Run tests with coverage
 npm run coverage
@@ -330,6 +330,28 @@ Pull requests and issues are welcome!
 5. Open a Pull Request
 
 ## Changelog
+
+### v1.3.1
+- Normalize Vite module IDs to POSIX so Windows `resolveId` / `load` share the same pathMap
+- Root-level Pug files now map to `/index.html` instead of `//index.html`
+- CI runs on Ubuntu, macOS, and Windows
+
+### v1.3.0
+- Skip Pug recompile when the module graph still has a valid transform
+- Resolve HTML request paths with `path.resolve` (Windows-safe)
+- Stat HTML and Pug in parallel; ignore non-GET/HEAD
+- `applyToEnvironment` limits work to the client environment
+- Cache compiled templates during `build --watch` and drop them on `.pug` changes
+- Register include/extends via `createFileOnlyEntry` when available
+- Use Vite's `config.logger` so `logLevel: 'silent'` is respected
+
+### v1.2.0
+- Stopped applying Pug 2's `pretty: true` default (removed in Pug 3)
+- Dev 404 responses now use HTTP 404 instead of 200
+- Full reload runs only when a Pug file or its includes change (CSS/JS HMR is left to Vite)
+- Build watches Pug `include` / `extends` dependencies
+- `buildOptions` / `watch` remain as deprecated aliases
+- Updated `pug` to 3.0.4, TypeScript 7.0.2, and aligned Vite 8 / picomatch types
 
 ### v1.1.5 (2026-03-13)
 - 🌐 Added multilingual README (English, Japanese, Chinese)

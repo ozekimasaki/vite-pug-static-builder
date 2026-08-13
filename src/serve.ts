@@ -1,15 +1,26 @@
-import fs from 'node:fs'
 import path from 'node:path'
+import type { ServerResponse } from 'node:http'
 import { URL } from 'node:url'
-import type http from 'node:http'
 
-import type Pug from 'pug'
-import type { Plugin, ViteDevServer, Connect, EnvironmentModuleNode } from 'vite'
-import { send } from 'vite'
-import type Picomatch from 'picomatch'
 import picomatch from 'picomatch'
+import type Picomatch from 'picomatch'
+import type Pug from 'pug'
+import type {
+  Connect,
+  HmrContext,
+  Plugin,
+  ViteDevServer,
+} from 'vite'
+import { send } from 'vite'
 
 import { compilePug } from './pug.js'
+import {
+  isClientEnvironment,
+  pathExists,
+  pugFileToHtmlUrl,
+  resolveHtmlRequestPath,
+  setPluginLogger,
+} from './utils.js'
 
 /**
  * 開発サーバー設定
@@ -25,185 +36,248 @@ export interface ServeSettings {
   readonly reload?: boolean
 }
 
+type HotChannel = {
+  send: (payload: { type: 'full-reload' }) => void
+}
+
+type GraphNode<T> = {
+  file?: string | null
+  importers: Iterable<T>
+}
+
+type GraphLike<T extends GraphNode<T>> = {
+  getModuleByUrl: (url: string) => Promise<T | undefined>
+  getModulesByFile: (file: string) => Iterable<T> | undefined
+  invalidateModule: (
+    mod: T,
+    seen?: Set<T>,
+    timestamp?: number,
+    isHmr?: boolean,
+  ) => void
+}
+
+const SKIP_PREFIXES = ['/@', '/__inspect/', '/node_modules/'] as const
+
+const getClientModuleGraph = (server: ViteDevServer) =>
+  server.environments?.client?.moduleGraph ?? server.moduleGraph
+
+const shouldSkipUrl = (url: string): boolean =>
+  SKIP_PREFIXES.some((prefix) => url.startsWith(prefix))
+
+const isHotChannel = (value: unknown): value is HotChannel =>
+  typeof value === 'object' &&
+  value !== null &&
+  'send' in value &&
+  typeof value.send === 'function'
+
+const sendFullReload = (
+  server: ViteDevServer,
+  environmentHot?: HotChannel,
+): void => {
+  if (environmentHot) {
+    environmentHot.send({ type: 'full-reload' })
+    return
+  }
+
+  const channel = server.hot ?? server.ws
+  if (isHotChannel(channel)) {
+    channel.send({ type: 'full-reload' })
+  }
+}
+
+const sendNotFound = (res: ServerResponse): void => {
+  res.statusCode = 404
+  res.setHeader('Content-Type', 'text/html; charset=utf-8')
+  res.end('404 Not Found')
+}
+
 /**
- * Connectミドルウェア型定義
+ * Pug本体または include / extends 先の変更なら関連モジュールを無効化する
+ * @returns Pug配信に影響する変更なら true
  */
-export type Middleware = (
-  req: Connect.IncomingMessage,
-  res: http.ServerResponse,
-  next: Connect.NextFunction,
-) => void | http.ServerResponse | Promise<void | http.ServerResponse>
+const invalidatePugGraph = async <T extends GraphNode<T>>(params: {
+  file: string
+  timestamp: number
+  root: string
+  moduleGraph: GraphLike<T>
+}): Promise<boolean> => {
+  const { file, timestamp, root, moduleGraph } = params
+  if (path.extname(file).toLowerCase() !== '.pug') {
+    return false
+  }
+
+  let affectsPug = true
+  const htmlUrl = pugFileToHtmlUrl(file, root)
+  const htmlModule = await moduleGraph.getModuleByUrl(htmlUrl)
+  if (htmlModule) {
+    moduleGraph.invalidateModule(htmlModule, new Set(), timestamp, true)
+  }
+
+  const fileModules = moduleGraph.getModulesByFile(file)
+  if (fileModules) {
+    const seen = new Set<T>()
+    for (const fileModule of fileModules) {
+      for (const importer of fileModule.importers) {
+        if (importer.file && path.extname(importer.file).toLowerCase() === '.pug') {
+          moduleGraph.invalidateModule(importer, seen, timestamp, true)
+        }
+      }
+    }
+  }
+
+  return affectsPug
+}
 
 /**
  * 開発サーバー用ミドルウェア生成
- * @param settings - サーブ設定
- * @param server - Vite開発サーバー
- * @returns Connectミドルウェア
  */
 const createMiddleware = (
   settings: ServeSettings,
   server: ViteDevServer,
-): Middleware => {
+): Connect.NextHandleFunction => {
   const { options, locals, ignorePattern } = settings
-  const pugOptions = { pretty: true, ...options }
   const ignoreMatcher = ignorePattern ? picomatch(ignorePattern) : null
 
   return async (req, res, next) => {
-    // 特殊なURLパスをスキップ
-    if (
-      !req.url ||
-      req.url.startsWith('/@') || // @fs @vite @react-refresh etc...
-      req.url.startsWith('/__inspect/') // vite-plugin-inspect
-    ) {
-      return next()
+    const method = req.method ?? 'GET'
+    if ((method !== 'GET' && method !== 'HEAD') || !req.url || shouldSkipUrl(req.url)) {
+      next()
+      return
     }
 
-    const url = new URL(req.url, 'relative:///').pathname
+    const url = new URL(req.url, 'http://vite.local').pathname
 
-    // 無視パターンにマッチする場合はスキップ
-    if (ignoreMatcher?.call(null, url)) {
-      return next()
+    if (ignoreMatcher?.(url)) {
+      next()
+      return
     }
 
-    const reqAbsPath = path.posix.join(
-      server.config.root,
-      url,
-      url.endsWith('/') ? 'index.html' : '',
-    )
+    const reqAbsPath = resolveHtmlRequestPath(server.config.root, url)
+    const parsedReqAbsPath = path.parse(reqAbsPath)
 
-    const parsedReqAbsPath = path.posix.parse(reqAbsPath)
-
-    // HTMLファイル以外はスキップ
     if (parsedReqAbsPath.ext !== '.html') {
-      return next()
+      next()
+      return
     }
 
-    // 既存のHTMLファイルがある場合はスキップ
-    if (fs.existsSync(reqAbsPath)) {
-      return next()
-    }
-
-    // 対応するPugファイルのパスを生成
-    const pugAbsPath = path.posix.format({
+    const pugAbsPath = path.format({
       dir: parsedReqAbsPath.dir,
       name: parsedReqAbsPath.name,
       ext: '.pug',
     })
 
-    // Pugファイルが存在しない場合は404
-    if (!fs.existsSync(pugAbsPath)) {
-      return send(req, res, '404 Not Found', 'html', {})
+    const [htmlExists, pugExists] = await Promise.all([
+      pathExists(reqAbsPath),
+      pathExists(pugAbsPath),
+    ])
+
+    if (htmlExists) {
+      next()
+      return
+    }
+
+    if (!pugExists) {
+      sendNotFound(res)
+      return
     }
 
     try {
-      // Pugファイルをコンパイル
-      const compileResult = await compilePug(
-        server.moduleGraph,
-        url,
-        pugAbsPath,
-        pugOptions,
-        locals,
-      )
+      const moduleGraph = getClientModuleGraph(server)
+      const existing = await moduleGraph.getModuleByUrl(url)
+      const needsCompile =
+        existing?.file !== pugAbsPath || !existing.transformResult?.code
 
-      // Pugコンパイルエラー
-      if (compileResult instanceof Error) {
-        return next(compileResult)
+      if (needsCompile) {
+        const compileResult = await compilePug(
+          moduleGraph,
+          url,
+          pugAbsPath,
+          options,
+          locals,
+          server.watcher,
+        )
+
+        if (compileResult instanceof Error) {
+          next(compileResult)
+          return
+        }
       }
 
-      // HTMLの変換処理
       const transformResult = await server.transformRequest(url)
 
       if (transformResult) {
         const html = await server.transformIndexHtml(url, transformResult.code)
-        return send(req, res, html, 'html', {})
+        send(req, res, html, 'html', {})
+        return
       }
 
-      // transformResultがnullまたは予期しないエラー
-      return next(new Error('An unexpected error has occurred during HTML transformation.'))
+      next(
+        new Error(
+          'An unexpected error has occurred during HTML transformation.',
+        ),
+      )
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error)
-      return next(new Error(`Pug compilation failed: ${errorMessage}`))
+      const errorMessage =
+        error instanceof Error ? error.message : String(error)
+      next(new Error(`Pug compilation failed: ${errorMessage}`))
     }
   }
 }
 
 /**
  * Vite用Pug開発サーバープラグイン
- * @param settings - サーブ設定
- * @returns Viteプラグイン
  */
 export const vitePluginPugServe = (settings?: ServeSettings): Plugin => {
-  const { reload } = settings ?? {}
+  const resolved = settings ?? {}
+  const { reload } = resolved
   let server: ViteDevServer
 
   return {
     name: 'vite-plugin-pug-serve',
     enforce: 'pre',
     apply: 'serve',
-    
+
+    applyToEnvironment(environment) {
+      return isClientEnvironment(environment)
+    },
+
+    configResolved(config) {
+      setPluginLogger(config.logger)
+    },
+
     configureServer(_server: ViteDevServer): void {
       server = _server
-      server.middlewares.use(createMiddleware(settings ?? {}, server))
+      server.middlewares.use(createMiddleware(resolved, server))
     },
 
-    // Vite 7の新しいhotUpdateフックを使用してより効率的な処理を実装
-    hotUpdate(context): void {
-      const { file, timestamp } = context
-      const { environment } = this
-      
-      // Pugファイル自体が変更された場合
-      if (path.extname(file) === '.pug') {
-        // 対応するHTMLモジュールのURLを生成
-        const parsedPath = path.parse(file)
-        const htmlUrl = path.posix.format({
-          dir: parsedPath.dir.replace(server.config.root, '').replace(/\\/g, '/'),
-          name: parsedPath.name,
-          ext: '.html',
-        })
-        
-        // Environment APIを使用してモジュールを取得・無効化（非同期処理を修正）
-        environment.moduleGraph.getModuleByUrl(htmlUrl).then((htmlModule) => {
-          if (htmlModule) {
-            // モジュールを適切に無効化（Vite 7の新しいAPI）
-            environment.moduleGraph.invalidateModule(
-              htmlModule,
-              new Set(),
-              timestamp,
-              true // HMRフラグを明示的にtrue
-            )
-          }
-        }).catch(() => {
-          // モジュールが見つからない場合は無視
-        })
-      }
+    // Vite 6+。handleHotUpdate より優先され、環境ごとに呼ばれる
+    async hotUpdate(context): Promise<[] | void> {
+      const affectsPug = await invalidatePugGraph({
+        file: context.file,
+        timestamp: context.timestamp,
+        root: server.config.root,
+        moduleGraph: this.environment.moduleGraph,
+      })
 
-      // 従来のファイルモジュール無効化処理
-      const fileModules = environment.moduleGraph.getModulesByFile(file)
-      if (fileModules) {
-        const invalidatedModules = new Set<EnvironmentModuleNode>()
-        for (const fileModule of fileModules) {
-          for (const importer of fileModule.importers) {
-            if (importer.file && path.extname(importer.file) === '.pug') {
-              environment.moduleGraph.invalidateModule(
-                importer,
-                invalidatedModules,
-                timestamp,
-                true
-              )
-            }
-          }
-        }
-      }
-
-      // リロード設定に基づいてフルリロードを実行
-      if (reload !== false) {
-        environment.hot.send({ type: 'full-reload' })
+      if (affectsPug && reload !== false) {
+        sendFullReload(server, this.environment.hot)
+        return []
       }
     },
 
-    // 古いhandleHotUpdateフックは削除（Vite 7では非推奨）
+    // hotUpdate が無いランタイム向け。両方ある場合は Vite が hotUpdate だけ呼ぶ
+    async handleHotUpdate(context: HmrContext): Promise<[] | void> {
+      const affectsPug = await invalidatePugGraph({
+        file: context.file,
+        timestamp: context.timestamp,
+        root: server.config.root,
+        moduleGraph: context.server.moduleGraph,
+      })
+
+      if (affectsPug && reload !== false) {
+        sendFullReload(context.server)
+        return []
+      }
+    },
   }
 }
-
-
-

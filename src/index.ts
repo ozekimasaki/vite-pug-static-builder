@@ -1,29 +1,23 @@
-import { vitePluginPugBuild, type BuildSettings } from './build.js'
-import { vitePluginPugServe, type ServeSettings } from './serve.js'
+import { vitePluginPugBuild } from './build.js'
+import { vitePluginPugServe } from './serve.js'
+import { resolveSettings, type PluginSettings } from './settings.js'
 
-/**
- * プラグイン設定
- */
-interface Settings {
-  /** ビルド時の設定 */
-  readonly build?: BuildSettings
-  /** 開発サーバー時の設定 */
-  readonly serve?: ServeSettings
-}
-
-const defaultSettings: Settings = {}
+export type { BuildSettings } from './build.js'
+export type { ServeSettings } from './serve.js'
+export type {
+  LegacySettings,
+  PluginSettings,
+  ResolvedSettings,
+  Settings,
+} from './settings.js'
 
 /**
  * Vite Pug静的サイトプラグイン
  * @param userSettings - ユーザー設定
  * @returns Viteプラグイン配列
  */
-const vitePluginPugStatic = (userSettings?: Settings) => {
-  const settings: Settings = {
-    ...defaultSettings,
-    ...userSettings,
-  }
-
+const vitePluginPugStatic = (userSettings?: PluginSettings) => {
+  const settings = resolveSettings(userSettings)
   return [vitePluginPugBuild(settings.build), vitePluginPugServe(settings.serve)]
 }
 
