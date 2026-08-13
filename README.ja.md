@@ -331,6 +331,15 @@ else
 
 ## 変更履歴
 
+### v1.3.0
+- モジュールグラフに有効な transform が残っているときは Pug を再コンパイルしない
+- HTML リクエストパスを `path.resolve` で解決（Windows 対応）
+- HTML と Pug の存在確認を並列化。GET/HEAD 以外はスキップ
+- `applyToEnvironment` で client 環境に限定
+- `build --watch` 中はコンパイル結果をキャッシュし、`.pug` 変更で破棄
+- include / extends は可能なとき `createFileOnlyEntry` で登録
+- Vite の `config.logger` を使い `logLevel: 'silent'` を尊重する
+
 ### v1.2.0
 - Pug 2 由来の `pretty: true` デフォルトを廃止（Pug 3 で削除済み）
 - 開発サーバーの未検出HTMLを HTTP 404 で返す

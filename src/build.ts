@@ -5,7 +5,14 @@ import { compileFile } from 'pug'
 import type Pug from 'pug'
 import type { Plugin } from 'vite'
 
-import { outputLog, pathExists, pugDependencies, stripQueryAndHash } from './utils.js'
+import {
+  isClientEnvironment,
+  outputLog,
+  pathExists,
+  pugDependencies,
+  setPluginLogger,
+  stripQueryAndHash,
+} from './utils.js'
 
 /**
  * Pugビルド設定
@@ -23,15 +30,37 @@ export interface BuildSettings {
 export const vitePluginPugBuild = (settings?: BuildSettings): Plugin => {
   const { options, locals } = settings ?? {}
   const pathMap = new Map<string, string>()
+  const templateCache = new Map<string, ReturnType<typeof compileFile>>()
   let root = ''
+
+  const forgetTemplate = (file: string): void => {
+    const normalized = path.normalize(file)
+    templateCache.delete(normalized)
+    for (const [pugPath, compiled] of templateCache) {
+      if (pugDependencies(compiled).includes(normalized)) {
+        templateCache.delete(pugPath)
+      }
+    }
+  }
 
   return {
     name: 'vite-plugin-pug-build',
     enforce: 'pre',
     apply: 'build',
 
+    applyToEnvironment(environment) {
+      return isClientEnvironment(environment)
+    },
+
     configResolved(config) {
       root = config.root
+      setPluginLogger(config.logger)
+    },
+
+    watchChange(id) {
+      if (path.extname(id) === '.pug') {
+        forgetTemplate(id)
+      }
     },
 
     resolveId(source: string): string | null {
@@ -60,7 +89,11 @@ export const vitePluginPugBuild = (settings?: BuildSettings): Plugin => {
       try {
         const pugPath = pathMap.get(cleanId)
         if (pugPath) {
-          const compiledTemplate = compileFile(pugPath, options)
+          let compiledTemplate = templateCache.get(pugPath)
+          if (!compiledTemplate) {
+            compiledTemplate = compileFile(pugPath, options)
+            templateCache.set(pugPath, compiledTemplate)
+          }
           this.addWatchFile(pugPath)
           for (const dependency of pugDependencies(compiledTemplate)) {
             this.addWatchFile(dependency)

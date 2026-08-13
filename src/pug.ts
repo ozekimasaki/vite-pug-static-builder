@@ -2,7 +2,6 @@ import path from 'node:path'
 
 import { compileFile } from 'pug'
 import type Pug from 'pug'
-import type { ModuleGraph, ModuleNode } from 'vite'
 
 import { outputLog, pugDependencies, toPosixPath } from './utils.js'
 
@@ -10,43 +9,68 @@ type Watchable = {
   add: (id: string) => unknown
 }
 
+type PugModuleLike<T> = {
+  file?: string | null
+  importers: Set<T>
+  importedModules: Set<T>
+  transformResult: { code: string; map?: unknown } | null
+}
+
+type PugModuleGraphLike<T extends PugModuleLike<T>> = {
+  getModuleByUrl: (url: string) => Promise<T | undefined>
+  ensureEntryFromUrl: (url: string) => Promise<T>
+  getModulesByFile: (file: string) => Iterable<T> | undefined
+  invalidateModule: (mod: T) => void
+  createFileOnlyEntry?: (file: string) => T
+}
+
+const firstModule = <T>(modules: Iterable<T> | undefined): T | undefined => {
+  if (!modules) return undefined
+  const iterator = modules[Symbol.iterator]()
+  return iterator.next().value
+}
+
 /**
  * include / extends の依存をモジュールグラフと watcher に登録する
  */
-const registerDependencies = async (
-  moduleGraph: ModuleGraph,
-  compiledModule: ModuleNode,
+const registerDependencies = async <T extends PugModuleLike<T>>(
+  moduleGraph: PugModuleGraphLike<T>,
+  compiledModule: T,
   dependencies: readonly string[],
   watcher?: Watchable,
 ): Promise<void> => {
-  for (const dependency of dependencies) {
-    const normalized = path.normalize(dependency)
-    watcher?.add(normalized)
+  await Promise.all(
+    dependencies.map(async (dependency) => {
+      const normalized = path.normalize(dependency)
+      watcher?.add(normalized)
 
-    try {
-      const existing = moduleGraph.getModulesByFile(normalized)
-      let depModule: ModuleNode | undefined =
-        existing && existing.size > 0 ? [...existing][0] : undefined
+      try {
+        let depModule = firstModule(moduleGraph.getModulesByFile(normalized))
 
-      if (!depModule) {
-        const fsUrl = `/@fs/${toPosixPath(normalized)}`
-        depModule = await moduleGraph.ensureEntryFromUrl(fsUrl)
-        depModule.file = normalized
+        if (!depModule) {
+          if (moduleGraph.createFileOnlyEntry) {
+            depModule = moduleGraph.createFileOnlyEntry(normalized)
+          } else {
+            const fsUrl = `/@fs/${toPosixPath(normalized)}`
+            depModule = await moduleGraph.ensureEntryFromUrl(fsUrl)
+            depModule.file = normalized
+          }
+        }
+
+        depModule.importers.add(compiledModule)
+        compiledModule.importedModules.add(depModule)
+      } catch {
+        outputLog('warn', 'dependency module processing failed:', normalized)
       }
-
-      depModule.importers.add(compiledModule)
-      compiledModule.importedModules.add(depModule)
-    } catch {
-      outputLog('warn', 'dependency module processing failed:', normalized)
-    }
-  }
+    }),
+  )
 }
 
 /**
  * Pugファイルをコンパイルして moduleGraph に HTML を載せる
  */
-export const compilePug = async (
-  moduleGraph: ModuleGraph,
+export const compilePug = async <T extends PugModuleLike<T>>(
+  moduleGraph: PugModuleGraphLike<T>,
   url: string,
   pugPath: string,
   options?: Pug.Options,

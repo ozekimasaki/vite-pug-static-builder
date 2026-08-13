@@ -3,8 +3,27 @@ import path from 'node:path'
 
 import ansis from 'ansis'
 import { createLogger } from 'vite'
+import type { Logger } from 'vite'
 
-const logger = createLogger()
+let logger: Logger = createLogger()
+
+export function setPluginLogger(next: Logger): void {
+  logger = next
+}
+
+export function isClientEnvironment(environment: {
+  name: string
+  consumer?: string
+}): boolean {
+  return environment.consumer === 'client' || environment.name === 'client'
+}
+
+/** リクエスト URL を root 上の HTML パスへ解決する（Windows でも path.resolve） */
+export function resolveHtmlRequestPath(root: string, urlPath: string): string {
+  const withIndex = urlPath.endsWith('/') ? `${urlPath}index.html` : urlPath
+  const relative = withIndex.startsWith('/') ? withIndex.slice(1) : withIndex
+  return path.resolve(root, relative)
+}
 
 export function outputLog(
   type: 'info' | 'warn' | 'warnOnce' | 'error',

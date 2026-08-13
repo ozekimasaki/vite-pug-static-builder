@@ -331,6 +331,15 @@ Pull requests and issues are welcome!
 
 ## Changelog
 
+### v1.3.0
+- Skip Pug recompile when the module graph still has a valid transform
+- Resolve HTML request paths with `path.resolve` (Windows-safe)
+- Stat HTML and Pug in parallel; ignore non-GET/HEAD
+- `applyToEnvironment` limits work to the client environment
+- Cache compiled templates during `build --watch` and drop them on `.pug` changes
+- Register include/extends via `createFileOnlyEntry` when available
+- Use Vite's `config.logger` so `logLevel: 'silent'` is respected
+
 ### v1.2.0
 - Stopped applying Pug 2's `pretty: true` default (removed in Pug 3)
 - Dev 404 responses now use HTTP 404 instead of 200

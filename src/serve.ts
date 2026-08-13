@@ -14,7 +14,13 @@ import type {
 import { send } from 'vite'
 
 import { compilePug } from './pug.js'
-import { pathExists, pugFileToHtmlUrl } from './utils.js'
+import {
+  isClientEnvironment,
+  pathExists,
+  pugFileToHtmlUrl,
+  resolveHtmlRequestPath,
+  setPluginLogger,
+} from './utils.js'
 
 /**
  * 開発サーバー設定
@@ -51,6 +57,9 @@ type GraphLike<T extends GraphNode<T>> = {
 }
 
 const SKIP_PREFIXES = ['/@', '/__inspect/', '/node_modules/'] as const
+
+const getClientModuleGraph = (server: ViteDevServer) =>
+  server.environments?.client?.moduleGraph ?? server.moduleGraph
 
 const shouldSkipUrl = (url: string): boolean =>
   SKIP_PREFIXES.some((prefix) => url.startsWith(prefix))
@@ -93,15 +102,15 @@ const invalidatePugGraph = async <T extends GraphNode<T>>(params: {
   moduleGraph: GraphLike<T>
 }): Promise<boolean> => {
   const { file, timestamp, root, moduleGraph } = params
-  const ext = path.extname(file)
-  let affectsPug = ext === '.pug'
+  if (path.extname(file) !== '.pug') {
+    return false
+  }
 
-  if (ext === '.pug') {
-    const htmlUrl = pugFileToHtmlUrl(file, root)
-    const htmlModule = await moduleGraph.getModuleByUrl(htmlUrl)
-    if (htmlModule) {
-      moduleGraph.invalidateModule(htmlModule, new Set(), timestamp, true)
-    }
+  let affectsPug = true
+  const htmlUrl = pugFileToHtmlUrl(file, root)
+  const htmlModule = await moduleGraph.getModuleByUrl(htmlUrl)
+  if (htmlModule) {
+    moduleGraph.invalidateModule(htmlModule, new Set(), timestamp, true)
   }
 
   const fileModules = moduleGraph.getModulesByFile(file)
@@ -110,7 +119,6 @@ const invalidatePugGraph = async <T extends GraphNode<T>>(params: {
     for (const fileModule of fileModules) {
       for (const importer of fileModule.importers) {
         if (importer.file && path.extname(importer.file) === '.pug') {
-          affectsPug = true
           moduleGraph.invalidateModule(importer, seen, timestamp, true)
         }
       }
@@ -131,7 +139,8 @@ const createMiddleware = (
   const ignoreMatcher = ignorePattern ? picomatch(ignorePattern) : null
 
   return async (req, res, next) => {
-    if (!req.url || shouldSkipUrl(req.url)) {
+    const method = req.method ?? 'GET'
+    if ((method !== 'GET' && method !== 'HEAD') || !req.url || shouldSkipUrl(req.url)) {
       next()
       return
     }
@@ -143,47 +152,55 @@ const createMiddleware = (
       return
     }
 
-    const reqAbsPath = path.posix.join(
-      server.config.root,
-      url,
-      url.endsWith('/') ? 'index.html' : '',
-    )
-    const parsedReqAbsPath = path.posix.parse(reqAbsPath)
+    const reqAbsPath = resolveHtmlRequestPath(server.config.root, url)
+    const parsedReqAbsPath = path.parse(reqAbsPath)
 
     if (parsedReqAbsPath.ext !== '.html') {
       next()
       return
     }
 
-    if (await pathExists(reqAbsPath)) {
-      next()
-      return
-    }
-
-    const pugAbsPath = path.posix.format({
+    const pugAbsPath = path.format({
       dir: parsedReqAbsPath.dir,
       name: parsedReqAbsPath.name,
       ext: '.pug',
     })
 
-    if (!(await pathExists(pugAbsPath))) {
+    const [htmlExists, pugExists] = await Promise.all([
+      pathExists(reqAbsPath),
+      pathExists(pugAbsPath),
+    ])
+
+    if (htmlExists) {
+      next()
+      return
+    }
+
+    if (!pugExists) {
       sendNotFound(res)
       return
     }
 
     try {
-      const compileResult = await compilePug(
-        server.moduleGraph,
-        url,
-        pugAbsPath,
-        options,
-        locals,
-        server.watcher,
-      )
+      const moduleGraph = getClientModuleGraph(server)
+      const existing = await moduleGraph.getModuleByUrl(url)
+      const needsCompile =
+        existing?.file !== pugAbsPath || !existing.transformResult?.code
 
-      if (compileResult instanceof Error) {
-        next(compileResult)
-        return
+      if (needsCompile) {
+        const compileResult = await compilePug(
+          moduleGraph,
+          url,
+          pugAbsPath,
+          options,
+          locals,
+          server.watcher,
+        )
+
+        if (compileResult instanceof Error) {
+          next(compileResult)
+          return
+        }
       }
 
       const transformResult = await server.transformRequest(url)
@@ -220,12 +237,20 @@ export const vitePluginPugServe = (settings?: ServeSettings): Plugin => {
     enforce: 'pre',
     apply: 'serve',
 
+    applyToEnvironment(environment) {
+      return isClientEnvironment(environment)
+    },
+
+    configResolved(config) {
+      setPluginLogger(config.logger)
+    },
+
     configureServer(_server: ViteDevServer): void {
       server = _server
       server.middlewares.use(createMiddleware(resolved, server))
     },
 
-    // Vite 7 / 8
+    // Vite 6+。handleHotUpdate より優先され、環境ごとに呼ばれる
     async hotUpdate(context): Promise<[] | void> {
       const affectsPug = await invalidatePugGraph({
         file: context.file,
@@ -240,7 +265,7 @@ export const vitePluginPugServe = (settings?: ServeSettings): Plugin => {
       }
     },
 
-    // Vite 6（hotUpdate が無いランタイム向け）
+    // hotUpdate が無いランタイム向け。両方ある場合は Vite が hotUpdate だけ呼ぶ
     async handleHotUpdate(context: HmrContext): Promise<[] | void> {
       const affectsPug = await invalidatePugGraph({
         file: context.file,

@@ -331,6 +331,15 @@ else
 
 ## 更新日志
 
+### v1.3.0
+- 模块图仍有有效 transform 时不再重新编译 Pug
+- 用 `path.resolve` 解析 HTML 请求路径（兼容 Windows）
+- 并行检查 HTML / Pug 是否存在；忽略非 GET/HEAD
+- `applyToEnvironment` 仅作用于 client 环境
+- `build --watch` 期间缓存编译结果，`.pug` 变更时丢弃
+- include / extends 在可用时通过 `createFileOnlyEntry` 注册
+- 使用 Vite 的 `config.logger`，尊重 `logLevel: 'silent'`
+
 ### v1.2.0
 - 停止应用 Pug 2 的 `pretty: true` 默认值（Pug 3 已移除）
 - 开发服务器对缺失 HTML 返回 HTTP 404
